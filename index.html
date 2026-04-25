@@ -105,10 +105,6 @@
       margin-bottom: 24px;
       gap: 6px;
     }
-    .unit-label {
-      font-size: 13px;
-      color: var(--gray);
-    }
     .toggle-switch {
       position: relative;
       width: 120px;
@@ -389,16 +385,32 @@
     <button class="btn-continue" id="waistBtn" disabled onclick="goNext()">המשך</button>
   </div>
 
-  <!-- Step 3: Dress size -->
+  <!-- Step 3: Bust -->
   <div class="step" id="step-3">
+    <h2 class="step-title">מה היקף החזה שלך?</h2>
+    <div class="unit-toggle">
+      <div class="toggle-switch" id="bustToggle" onclick="toggleUnit('bust')">
+        <div class="toggle-thumb"></div>
+        <div class="toggle-labels">
+          <span>ס"מ</span>
+          <span>אינץ'</span>
+        </div>
+      </div>
+    </div>
+    <div class="options-list" id="bustOptions"></div>
+    <button class="btn-continue" id="bustBtn" disabled onclick="goNext()">המשך</button>
+  </div>
+
+  <!-- Step 4: Dress size -->
+  <div class="step" id="step-4">
     <h2 class="step-title">מה מידת השמלה שלך?</h2>
     <p class="step-sub">מידות EU</p>
     <div class="options-list" id="dressOptions"></div>
     <button class="btn-continue" id="dressBtn" disabled onclick="goNext()">המשך</button>
   </div>
 
-  <!-- Step 4: Bra size -->
-  <div class="step" id="step-4">
+  <!-- Step 5: Bra size -->
+  <div class="step" id="step-5">
     <h2 class="step-title">מה מידת החזייה שלך?</h2>
     <p class="step-sub">זה עוזר לנו להבין את צורת גופך טוב יותר</p>
 
@@ -411,8 +423,8 @@
     <button class="btn-continue" id="braBtn" disabled onclick="goNext()">המשך</button>
   </div>
 
-  <!-- Step 5: Result -->
-  <div class="step" id="step-5">
+  <!-- Step 6: Result -->
+  <div class="step" id="step-6">
     <h2 class="step-title">המידה המומלצת שלך</h2>
     <p class="step-sub">בהתאם לפרטים שמסרת</p>
 
@@ -429,20 +441,21 @@
 </div>
 
 <script>
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 let currentStep = 1;
 
 const answers = {
-  height: null,      // cm value
-  waist: null,       // cm value
-  dress: null,       // EU number
-  band: null,        // band number
-  cup: null          // cup letter
+  height: null,   // cm value
+  waist: null,    // cm value
+  bust: null,     // cm value
+  dress: null,    // EU number
+  band: null,     // band number
+  cup: null       // cup letter
 };
 
-const units = { height: 'cm', waist: 'cm' };
+const units = { height: 'cm', waist: 'cm', bust: 'cm' };
 
-// Data
+// ---- Data ----
 const heightCM = [
   { label: '150 ס"מ ומטה', value: 148 },
   { label: '155 ס"מ', value: 155 },
@@ -499,6 +512,33 @@ const waistIN = [
   { label: '33" ומעלה', value: 85 },
 ];
 
+const bustCM = [
+  { label: '76 ס"מ ומטה', value: 75 },
+  { label: '79 ס"מ', value: 79 },
+  { label: '81 ס"מ', value: 81 },
+  { label: '84 ס"מ', value: 84 },
+  { label: '86 ס"מ', value: 86 },
+  { label: '89 ס"מ', value: 89 },
+  { label: '91 ס"מ', value: 91 },
+  { label: '94 ס"מ', value: 94 },
+  { label: '97 ס"מ', value: 97 },
+  { label: '99 ס"מ', value: 99 },
+  { label: '102 ס"מ ומעלה', value: 103 },
+];
+const bustIN = [
+  { label: '30" ומטה', value: 75 },
+  { label: '31"', value: 79 },
+  { label: '32"', value: 81 },
+  { label: '33"', value: 84 },
+  { label: '34"', value: 86 },
+  { label: '35"', value: 89 },
+  { label: '36"', value: 91 },
+  { label: '37"', value: 94 },
+  { label: '38"', value: 97 },
+  { label: '39"', value: 99 },
+  { label: '40" ומעלה', value: 103 },
+];
+
 const dressSizes = [32, 34, 36, 38, 40, 42, 44, 46, 48, 50];
 const bandSizes  = [65, 70, 75, 80, 85, 90, 95, 100, 105, 110];
 const cupSizes   = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
@@ -507,18 +547,20 @@ const cupSizes   = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
 function calcSize() {
   const d = answers.dress;
   const w = answers.waist; // cm
+  const b = answers.bust;  // cm
 
   // Primary signal: dress size
   let score = 0;
-  if (d <= 34) score += 1;
-  else if (d <= 36) score += 2;
-  else if (d <= 40) score += 3;
-  else if (d <= 44) score += 4;
-  else score += 5;
+  if (d <= 34) score = 1;
+  else if (d <= 36) score = 2;
+  else if (d <= 40) score = 3;
+  else if (d <= 44) score = 4;
+  else score = 5;
 
-  // Secondary: waist
-  if (w < 61) score = Math.max(1, score - 0.5);
-  else if (w >= 82) score = Math.min(5, score + 0.5);
+  // Secondary: waist and bust as tiebreakers
+  const bodySignal = (w + b) / 2;
+  if (bodySignal < 68) score = Math.max(1, score - 0.5);
+  else if (bodySignal >= 90) score = Math.min(5, score + 0.5);
 
   const rounded = Math.round(score);
   const map = { 1: 'XS', 2: 'S', 3: 'M', 4: 'L', 5: 'XL' };
@@ -566,7 +608,7 @@ function renderDressList() {
   });
 }
 
-function renderGrid(containerId, items, key, btnId) {
+function renderGrid(containerId, items, key) {
   const el = document.getElementById(containerId);
   el.innerHTML = '';
   items.forEach(item => {
@@ -592,21 +634,24 @@ function renderResult() {
   document.getElementById('resultSize').textContent = size.code;
   document.getElementById('resultSizeFull').textContent = size.full;
 
-  const heightVal = answers.height;
   const heightLabel = (units.height === 'cm')
-    ? `${heightVal} ס"מ`
-    : heightIN.find(h => h.value === heightVal)?.label || `${heightVal}`;
+    ? `${answers.height} ס"מ`
+    : heightIN.find(h => h.value === answers.height)?.label || `${answers.height}`;
 
-  const waistVal = answers.waist;
   const waistLabel = (units.waist === 'cm')
-    ? `${waistVal} ס"מ`
-    : waistIN.find(w => w.value === waistVal)?.label || `${waistVal}`;
+    ? `${answers.waist} ס"מ`
+    : waistIN.find(w => w.value === answers.waist)?.label || `${answers.waist}`;
+
+  const bustLabel = (units.bust === 'cm')
+    ? `${answers.bust} ס"מ`
+    : bustIN.find(b => b.value === answers.bust)?.label || `${answers.bust}`;
 
   const details = [
-    { label: 'גובה', val: heightLabel },
-    { label: 'מותניים', val: waistLabel },
+    { label: 'גובה',           val: heightLabel },
+    { label: 'היקף מותניים',   val: waistLabel },
+    { label: 'היקף חזה',       val: bustLabel },
     { label: 'מידת שמלה (EU)', val: answers.dress },
-    { label: 'חזייה', val: `${answers.band} / ${answers.cup}` },
+    { label: 'חזייה',          val: `${answers.band} / ${answers.cup}` },
   ];
 
   const el = document.getElementById('resultDetails');
@@ -620,29 +665,25 @@ function renderResult() {
 // ---- Unit toggle ----
 function toggleUnit(type) {
   units[type] = units[type] === 'cm' ? 'in' : 'cm';
-  const tog = document.getElementById(type + 'Toggle');
-  tog.classList.toggle('cm', units[type] === 'cm');
-  // Reset selection when switching units
+  document.getElementById(type + 'Toggle').classList.toggle('cm', units[type] === 'cm');
   answers[type] = null;
-  if (type === 'height') {
-    renderList('heightOptions', units.height === 'cm' ? heightCM : heightIN, 'height', 'heightBtn');
-    document.getElementById('heightBtn').disabled = true;
-  } else {
-    renderList('waistOptions', units.waist === 'cm' ? waistCM : waistIN, 'waist', 'waistBtn');
-    document.getElementById('waistBtn').disabled = true;
-  }
+
+  const configs = {
+    height: { listId: 'heightOptions', cm: heightCM, in: heightIN, btnId: 'heightBtn' },
+    waist:  { listId: 'waistOptions',  cm: waistCM,  in: waistIN,  btnId: 'waistBtn'  },
+    bust:   { listId: 'bustOptions',   cm: bustCM,   in: bustIN,   btnId: 'bustBtn'   },
+  };
+  const c = configs[type];
+  renderList(c.listId, units[type] === 'cm' ? c.cm : c.in, type, c.btnId);
+  document.getElementById(c.btnId).disabled = true;
 }
 
 // ---- Navigation ----
 function goNext() {
-  if (currentStep < TOTAL_STEPS) {
-    showStep(currentStep + 1);
-  }
+  if (currentStep < TOTAL_STEPS) showStep(currentStep + 1);
 }
 function goBack() {
-  if (currentStep > 1) {
-    showStep(currentStep - 1);
-  }
+  if (currentStep > 1) showStep(currentStep - 1);
 }
 function showStep(n) {
   document.getElementById('step-' + currentStep).classList.remove('active');
@@ -654,12 +695,11 @@ function showStep(n) {
   const pct = ((currentStep - 1) / (TOTAL_STEPS - 1)) * 100;
   document.getElementById('progressFill').style.width = pct + '%';
 
-  const backBtn = document.getElementById('backBtn');
-  backBtn.classList.toggle('hidden', currentStep === 1 || currentStep === TOTAL_STEPS);
+  document.getElementById('backBtn').classList.toggle(
+    'hidden', currentStep === 1 || currentStep === TOTAL_STEPS
+  );
 
-  const stepNames = ['', 'גובה', 'מותניים', 'מידת שמלה', 'חזייה', ''];
-  const counter = document.getElementById('stepCounter');
-  counter.textContent = currentStep < TOTAL_STEPS
+  document.getElementById('stepCounter').textContent = currentStep < TOTAL_STEPS
     ? `שלב ${currentStep} מתוך ${TOTAL_STEPS - 1}`
     : '';
 }
@@ -667,30 +707,31 @@ function closeQuiz() {
   if (confirm('לצאת ממציאת המידה?')) restart();
 }
 function restart() {
-  answers.height = null; answers.waist = null;
-  answers.dress = null; answers.band = null; answers.cup = null;
-  units.height = 'cm'; units.waist = 'cm';
+  Object.keys(answers).forEach(k => answers[k] = null);
+  units.height = 'cm'; units.waist = 'cm'; units.bust = 'cm';
   init();
   showStep(1);
 }
 
 // ---- Init ----
 function init() {
-  // Height: default cm toggle (not toggled = cm)
   document.getElementById('heightToggle').classList.remove('cm');
   renderList('heightOptions', heightCM, 'height', 'heightBtn');
   document.getElementById('heightBtn').disabled = true;
 
-  // Waist: default cm toggle
   document.getElementById('waistToggle').classList.remove('cm');
   renderList('waistOptions', waistCM, 'waist', 'waistBtn');
   document.getElementById('waistBtn').disabled = true;
 
+  document.getElementById('bustToggle').classList.remove('cm');
+  renderList('bustOptions', bustCM, 'bust', 'bustBtn');
+  document.getElementById('bustBtn').disabled = true;
+
   renderDressList();
   document.getElementById('dressBtn').disabled = true;
 
-  renderGrid('bandOptions', bandSizes, 'band', 'braBtn');
-  renderGrid('cupOptions', cupSizes, 'cup', 'braBtn');
+  renderGrid('bandOptions', bandSizes, 'band');
+  renderGrid('cupOptions', cupSizes, 'cup');
   document.getElementById('braBtn').disabled = true;
 
   document.getElementById('progressFill').style.width = '0%';
